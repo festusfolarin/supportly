@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 // Import the new Field components
 
 import { Field, FieldLabel, FieldError } from "@/components/ui/field";
+import { PasswordInput } from "@/components/ui/password-input";
 
 // --- 1. Zod Schema remains the same ---
 
@@ -113,10 +114,9 @@ export default function LoginPage() {
                 <Field data-invalid={fieldState.invalid ? "" : undefined}>
                   <FieldLabel htmlFor={field.name}>Password</FieldLabel>
 
-                  <Input
+                  <PasswordInput
                     id={field.name}
                     placeholder="••••••••"
-                    type="password"
                     aria-invalid={fieldState.invalid ? "true" : "false"}
                     {...field}
                   />

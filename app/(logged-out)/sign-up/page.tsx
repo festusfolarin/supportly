@@ -32,6 +32,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { PasswordInput } from "@/components/ui/password-input";
 
 function isAtLeast18(birth: Date) {
   const today = new Date();
@@ -48,15 +49,45 @@ const isCompany = (payload: { value: unknown }) =>
 
 const formSchema = z
   .object({
-    email: z.email({ message: "Invalid email address." }),
+    email: z
+      .string({ error: "Email is required" })
+      .min(1, { message: "Email is required" })
+      .pipe(z.email({ message: "Invalid email address." })),
     accountType: z.enum(["personal", "company"], {
       error: "Select an account type",
     }),
     companyName: z.string().optional(),
     numberOfEmployees: z.coerce.number<string>().optional(),
+    acceptTerms: z.literal(true, {
+      error: "You must accept the terms and conditions",
+    }),
     dob: z
       .date({ error: "Date of birth is required" })
       .refine(isAtLeast18, { message: "You must be at least 18 years old" }),
+
+    password: z
+      .string({ error: "Password is required" })
+      .min(1, { message: "Password is required" })
+      .min(8, { message: "Password must be at least 8 characters" })
+      .refine((password) => /^(?=.*[!@#$%^&*])(?=.*[A-Z]).*$/.test(password), {
+        message:
+          "Password must contain at least one uppercase letter and one special character",
+      }),
+    confirmPassword: z
+      .string({ error: "Confirm password is required" })
+      .min(1, { message: "Confirm password is required" }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match",
+    when: (payload) => {
+      // only compare once both fields hold valid strings
+      const v = payload.value as {
+        password?: string;
+        confirmPassword?: string;
+      };
+      return !!v.password && !!v.confirmPassword;
+    },
   })
   .refine((d) => d.accountType !== "company" || !!d.companyName?.trim(), {
     path: ["companyName"],
@@ -84,6 +115,8 @@ export default function SignupPage() {
       email: "",
       accountType: "" as SignupFormInput["accountType"],
       companyName: "",
+      password: "",
+      confirmPassword: "",
     },
   });
 
@@ -260,6 +293,47 @@ export default function SignupPage() {
                     </PopoverContent>
                   </Popover>
 
+                  {fieldState.error && (
+                    <FieldError>{fieldState.error.message}</FieldError>
+                  )}
+                </Field>
+              )}
+            />
+
+            <Controller
+              name="password"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid ? "" : undefined}>
+                  <FieldLabel htmlFor={field.name}>Password</FieldLabel>
+                  <PasswordInput
+                    id={field.name}
+                    placeholder="••••••••"
+                    {...field}
+                  />
+                  {fieldState.error && (
+                    <FieldError>{fieldState.error.message}</FieldError>
+                  )}
+                </Field>
+              )}
+            />
+
+            <Controller
+              name="confirmPassword"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid ? "" : undefined}>
+                  <FieldLabel htmlFor={field.name}>Confirm Password</FieldLabel>
+                  <PasswordInput
+                    id={field.name}
+                    placeholder="••••••••"
+                    {...field}
+                    onChange={(e) => {
+                      field.onChange(e);
+                      if (form.getValues("confirmPassword"))
+                        form.trigger("confirmPassword");
+                    }}
+                  />
                   {fieldState.error && (
                     <FieldError>{fieldState.error.message}</FieldError>
                   )}
